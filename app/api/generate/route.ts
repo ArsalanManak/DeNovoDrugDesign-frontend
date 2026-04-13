@@ -9,7 +9,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const res = await fetch(`${backendUrl.replace(/\/$/, "")}/generate`, {
+  const normalizedBackendUrl = normalizeHfSpacesUrl(backendUrl);
+
+  const res = await fetch(`${normalizedBackendUrl.replace(/\/$/, "")}/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -25,4 +27,19 @@ export async function POST(req: Request) {
   }
 
   return Response.json(data, { status: res.status });
+}
+
+function normalizeHfSpacesUrl(input: string): string {
+  const trimmed = input.trim().replace(/\/$/, "");
+
+  const repoMatch = trimmed.match(
+    /^https?:\/\/huggingface\.co\/spaces\/([^/]+)\/([^/]+)$/i
+  );
+  if (repoMatch) {
+    const owner = repoMatch[1];
+    const space = repoMatch[2];
+    return `https://${owner}-${space}.hf.space`;
+  }
+
+  return trimmed;
 }
