@@ -43,6 +43,8 @@ export default function Home() {
     { name: "Aspirin", smiles: "CC(=O)Oc1ccccc1C(=O)O" }
   ];
 
+  const [outputTab, setOutputTab] = useState<"preview" | "json">("preview");
+
   async function generate() {
     setLoading(true);
     setResults(null);
@@ -270,8 +272,18 @@ export default function Home() {
             <div className="flex items-center gap-6">
               <h2 className="text-white font-bold text-lg">Output</h2>
               <nav className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-zinc-500">
-                <span className="text-white border-b-2 border-white pb-1 cursor-pointer">Preview</span>
-                <span className="hover:text-zinc-300 cursor-pointer">JSON</span>
+                <span 
+                  onClick={() => setOutputTab("preview")}
+                  className={`${outputTab === "preview" ? "text-white border-b-2 border-white" : "hover:text-zinc-300"} pb-1 cursor-pointer transition-all`}
+                >
+                  Preview
+                </span>
+                <span 
+                  onClick={() => setOutputTab("json")}
+                  className={`${outputTab === "json" ? "text-white border-b-2 border-white" : "hover:text-zinc-300"} pb-1 cursor-pointer transition-all`}
+                >
+                  JSON
+                </span>
               </nav>
             </div>
             <div className="flex items-center gap-2 text-[#76b900] text-xs font-bold cursor-pointer hover:underline">
@@ -279,32 +291,62 @@ export default function Home() {
             </div>
           </header>
 
-          <div className="flex-1 p-8 relative overflow-hidden">
+          <div className="flex-1 p-8 relative overflow-hidden flex flex-col">
             {results ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12 pr-12">
-                {results.molecules?.map((m, i) => (
-                  <div key={i} className="flex flex-col">
-                    <div className="aspect-square w-full rounded-lg border border-white/5 bg-transparent flex items-center justify-center mb-3 relative overflow-hidden">
-                      {/* Structure Placeholder */}
-                      <div className="p-4 text-center">
-                        <div className="w-16 h-16 border-2 border-zinc-800 rounded-full mx-auto mb-2 border-dashed flex items-center justify-center">
-                          <span className="text-zinc-800 text-[8px]">MOL</span>
+              outputTab === "preview" ? (
+                <div className="flex-1 overflow-y-auto pr-12 custom-scrollbar">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10">
+                    {results.molecules?.map((m, i) => (
+                      <div key={i} className="flex flex-col">
+                        <div className="aspect-[4/3] w-full bg-transparent flex items-center justify-center relative group">
+                          {/* Molecule Sketch Placeholder - White lines on dark */}
+                          <div className="w-full h-full flex items-center justify-center p-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                            <svg viewBox="0 0 100 100" className="w-full h-full stroke-white fill-none stroke-[0.5]">
+                              <path d="M30,50 L50,30 L70,50 L50,70 Z M50,30 L50,10 M70,50 L90,50 M50,70 L50,90 M30,50 L10,50" />
+                              <circle cx="50" cy="10" r="2" fill="white" />
+                              <circle cx="90" cy="50" r="2" fill="white" />
+                              <circle cx="50" cy="90" r="2" fill="white" />
+                              <circle cx="10" cy="50" r="2" fill="white" />
+                            </svg>
+                          </div>
                         </div>
-                        <div className="text-[7px] text-zinc-700 font-mono break-all leading-tight">
-                          {m.smiles}
-                        </div>
+                        {typeof m.score === "number" && (
+                          <div className="w-full mt-1">
+                            <div className="h-7 w-full bg-[#d4e157] text-black text-xs font-bold flex items-center justify-center">
+                              {m.score.toFixed(2)}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    {typeof m.score === "number" && (
-                      <div className="w-full">
-                        <div className="h-6 w-full bg-[#d4e157] text-black text-center text-xs font-bold flex items-center justify-center rounded-sm">
-                          {m.score.toFixed(2)}
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="flex-1 bg-[#050505] border border-white/5 rounded-lg p-6 font-mono text-sm overflow-auto custom-scrollbar relative">
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(JSON.stringify(results, null, 2))}
+                    className="absolute top-4 right-4 p-2 hover:bg-white/5 rounded transition-colors text-zinc-500 hover:text-white"
+                    title="Copy JSON"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  </button>
+                  <pre className="text-zinc-400">
+                    <span className="text-white">[</span>
+                    {results.molecules?.map((m, i) => (
+                      <div key={i} className="pl-4">
+                        <span className="text-white">{"{"}</span>
+                        <div className="pl-4">
+                          <span className="text-[#ff79c6]">"sample"</span>: <span className="text-[#f1fa8c]">"{m.smiles}"</span>,
+                          <br />
+                          <span className="text-[#ff79c6]">"score"</span>: <span className="text-[#bd93f9]">{m.score?.toFixed(16)}</span>
+                        </div>
+                        <span className="text-white">{"}"}</span>{i < results.molecules.length - 1 ? "," : ""}
+                      </div>
+                    ))}
+                    <span className="text-white">]</span>
+                  </pre>
+                </div>
+              )
             ) : (
               <div className="h-full flex items-center justify-center text-zinc-800 text-sm font-bold uppercase tracking-widest italic opacity-50">
                 Awaiting Execution...
@@ -312,11 +354,11 @@ export default function Home() {
             )}
 
             {/* Color Gradient Scale on the far right */}
-            {results && (
+            {results && outputTab === "preview" && (
               <div className="absolute right-6 top-10 bottom-10 w-4 flex flex-col items-center gap-2">
                 <span className="text-[10px] font-bold text-[#76b900]">1.00</span>
-                <div className="flex-1 w-full bg-gradient-to-b from-[#ffff00] via-[#76b900] to-[#004d40] rounded-sm" />
-                <span className="text-[10px] font-bold text-[#76b900]">0.40</span>
+                <div className="flex-1 w-full bg-gradient-to-b from-[#ffff00] via-[#76b900] to-[#004d40] rounded-sm shadow-[0_0_15px_rgba(118,185,0,0.2)]" />
+                <span className="text-[10px] font-bold text-[#004d40]">0.40</span>
                 <div className="absolute right-6 top-[20%] text-[10px] font-bold text-zinc-600">0.80</div>
                 <div className="absolute right-6 top-[50%] text-[10px] font-bold text-zinc-600">0.60</div>
               </div>

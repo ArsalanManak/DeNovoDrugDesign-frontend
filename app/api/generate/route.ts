@@ -23,11 +23,25 @@ export async function POST(req: Request) {
 
   // If res is still a standard fetch response (not our catch-wrap)
   const text = await (res as Response).text();
-  let data: unknown;
+  console.log("RAW BACKEND RESPONSE:", text.substring(0, 500)); // Log first 500 chars
+  let data: any;
   try {
     data = JSON.parse(text);
   } catch {
     data = { error: text };
+  }
+
+  // Ensure data has the expected structure for the frontend
+  if (data && !data.molecules && Array.isArray(data)) {
+    // If backend returned a raw array instead of the {molecules: []} object
+    data = {
+      generated: data.length,
+      drug_like: data.length,
+      molecules: data.map((m: any) => ({
+        smiles: m.sample || m.smiles || m.smi,
+        score: m.score
+      }))
+    };
   }
 
   return Response.json(data, { status: res.status });
