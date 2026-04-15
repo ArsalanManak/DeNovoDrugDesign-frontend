@@ -1,13 +1,8 @@
 export async function POST(req: Request) {
   const body = await req.json();
 
-  const backendUrl = process.env.HF_BACKEND_URL;
-  if (!backendUrl) {
-    return Response.json(
-      { error: "HF_BACKEND_URL is not set" },
-      { status: 500 }
-    );
-  }
+  // Directly using the backend URL as requested
+  const backendUrl = "https://huggingface.co/spaces/Arsalan-joiya/DeNovoDrugDesign";
 
   const normalizedBackendUrl = normalizeHfSpacesUrl(backendUrl);
 
@@ -16,9 +11,18 @@ export async function POST(req: Request) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
     cache: "no-store",
+  }).catch(err => {
+    console.error("Fetch error to backend:", err);
+    return new Response(JSON.stringify({ error: `Backend connection failed: ${err.message}` }), { status: 504 });
   });
 
-  const text = await res.text();
+  if (res instanceof Response && res.status >= 400) {
+    const errorText = await res.text();
+    return Response.json({ error: `Backend error ${res.status}: ${errorText}` }, { status: res.status });
+  }
+
+  // If res is still a standard fetch response (not our catch-wrap)
+  const text = await (res as Response).text();
   let data: unknown;
   try {
     data = JSON.parse(text);
