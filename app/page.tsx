@@ -11,9 +11,16 @@ type GenerateResponse = {
   error?: string;
 };
 
+// Helper to get a professional molecule visualization URL
+const getMoleculeSvg = (smiles: string) => {
+  // Using a reliable SMILES to SVG service (like NIH Cactus or similar)
+  // or a placeholder that at least varies by the SMILES string
+  return `https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(smiles)}/image?format=svg&width=300&height=200&linewidth=1.5&symbolsize=12&bgcolor=transparent&antialiasing=1`;
+};
+
 export default function Home() {
   const [smiles, setSmiles] = useState("");
-  const [numMolecules, setNumMolecules] = useState(30);
+  const [numMolecules, setNumMolecules] = useState(10);
   const [algorithm, setAlgorithm] = useState("CMA-ES");
   const [propertyName, setPropertyName] = useState("QED");
   const [maximize, setMaximize] = useState(true);
@@ -44,6 +51,17 @@ export default function Home() {
   ];
 
   const [outputTab, setOutputTab] = useState<"preview" | "json">("preview");
+
+  const downloadResults = () => {
+    if (!results) return;
+    const dataStr = JSON.stringify(results, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = 'molmim_results.json';
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
 
   async function generate() {
     setLoading(true);
@@ -77,38 +95,117 @@ export default function Home() {
     }
   }
 
+  const [showLanding, setShowLanding] = useState(true);
+
+  if (showLanding) {
+    return (
+      <div className="h-screen bg-[#0b0b0b] font-sans text-zinc-300 overflow-y-auto selection:bg-[#76b900]/30 custom-scrollbar">
+        {/* Hero Section */}
+        <div className="relative border-b border-white/5 bg-black py-24 overflow-hidden">
+          <div className="absolute inset-0 opacity-20 pointer-events-none">
+            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#76b90033_0%,transparent_50%)]" />
+          </div>
+          
+          <div className="relative mx-auto max-w-4xl px-6 text-center">
+            <div className="inline-block px-3 py-1 rounded-full border border-[#76b900]/30 bg-[#76b900]/5 text-[#76b900] text-[10px] font-bold uppercase tracking-widest mb-6">
+              AI-Driven Drug Discovery
+            </div>
+            <h1 className="text-5xl md:text-6xl font-black text-white tracking-tight mb-8">
+              De-Novo <span className="text-[#76b900]">Molecular</span> Generator
+            </h1>
+            <p className="text-lg text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+              Accelerate lead optimization using NVIDIA's MolMIM architecture. Generate novel, drug-like molecules with targeted properties using conditional masking and iterative optimization.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button 
+                onClick={() => setShowLanding(false)}
+                className="h-14 px-10 rounded bg-[#76b900] font-bold text-black hover:bg-[#86d400] transition-all active:scale-95 uppercase tracking-widest flex items-center gap-3 shadow-[0_0_30px_rgba(118,185,0,0.3)]"
+              >
+                Explore Here <span className="text-xl">→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Technical Overview Section */}
+        <div className="mx-auto max-w-5xl px-6 py-24">
+          <div className="grid md:grid-cols-2 gap-16 items-start">
+            <div className="space-y-8">
+              <section>
+                <h3 className="text-[#76b900] text-xs font-bold uppercase tracking-widest mb-3">Objective</h3>
+                <h2 className="text-3xl font-bold text-white mb-4">Generative Chemistry for Lead Optimization</h2>
+                <p className="text-zinc-400 leading-relaxed">
+                  Our pipeline leverages the <strong>MolMIM (Molecular Masked Iterative Model)</strong> to bridge the gap between chemical space and property-driven design. It enables researchers to input a known chemical structure (SMILES) and generate a library of derivatives optimized for specific pharmacokinetic profiles.
+                </p>
+              </section>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="p-4 rounded border border-white/5 bg-white/5">
+                  <div className="text-[#76b900] text-xl mb-2 font-bold">QED</div>
+                  <div className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Quantitative Estimate of Drug-likeness</div>
+                </div>
+                <div className="p-4 rounded border border-white/5 bg-white/5">
+                  <div className="text-[#76b900] text-xl mb-2 font-bold">LogP</div>
+                  <div className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Lipophilicity Optimization</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-8 bg-zinc-900/50 p-8 rounded-xl border border-white/5">
+              <h3 className="text-white text-lg font-bold border-b border-white/10 pb-4">Scientific Pipeline</h3>
+              <div className="space-y-6">
+                {[
+                  { step: "01", title: "Conditional Latent Space", desc: "Molecules are encoded into a continuous latent representation using MolMIM's transformer-based architecture." },
+                  { step: "02", title: "Iterative Optimization", desc: "Adaptive algorithms (CMA-ES) navigate the latent space to find regions maximizing target scores." },
+                  { step: "03", title: "RDKit Validation", desc: "Generated candidates undergo post-hoc validation for Lipinski rule compliance and structural integrity." }
+                ].map((item) => (
+                  <div key={item.step} className="flex gap-4">
+                    <span className="text-[#76b900] font-mono font-bold text-sm">{item.step}</span>
+                    <div>
+                      <h4 className="text-white text-sm font-bold uppercase mb-1 tracking-wider">{item.title}</h4>
+                      <p className="text-xs text-zinc-500 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="border-t border-white/5 py-12 text-center text-zinc-600">
+          <p className="text-[10px] uppercase tracking-widest">Computational Chemist &bull; De-Novo Molecular Design Framework &bull; 2026</p>
+        </footer>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#0b0b0b] font-sans text-zinc-300 selection:bg-[#76b900]/30">
-      <div className="mx-auto max-w-[1400px] min-h-screen flex flex-col md:flex-row border-x border-white/5">
+    <div className="h-screen bg-[#0b0b0b] font-sans text-zinc-300 selection:bg-[#76b900]/30 overflow-hidden">
+      <div className="mx-auto max-w-[1400px] h-full flex flex-col md:flex-row border-x border-white/5 overflow-hidden">
         
         {/* Left Column: Input Panel */}
-        <div className="flex-1 border-r border-white/10 flex flex-col">
+        <div className="flex-1 flex flex-col border-r border-white/10 bg-[#080808] overflow-hidden">
           <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-6">
               <h2 className="text-white font-bold text-lg">Input</h2>
-              <nav className="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-zinc-500">
-                <span className="text-[#76b900] border-b-2 border-[#76b900] pb-1 cursor-pointer">Try</span>
-                <span className="hover:text-zinc-300 cursor-pointer">Shell</span>
-                <span className="hover:text-zinc-300 cursor-pointer">Python</span>
-              </nav>
             </div>
-            <span className="text-[#76b900] text-xs font-bold cursor-pointer hover:underline">View Examples</span>
           </header>
 
-          <div className="p-8 space-y-8 flex-1 overflow-y-auto">
+          <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-5">
             {/* SMILES Examples */}
-            <div>
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-3 block">
-                SMILES Examples <span className="text-zinc-600 italic">ⓘ</span>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                SMILES Examples <span className="opacity-50 italic">ⓘ</span>
               </label>
-              <select
+              <select 
                 onChange={(e) => {
                   const ex = examples.find(ex => ex.name === e.target.value);
                   if (ex) setSmiles(ex.smiles);
                 }}
-                className="w-full h-11 rounded-lg border border-[#76b900] bg-black px-4 text-sm text-zinc-100 outline-none focus:ring-1 focus:ring-[#76b900] transition-all"
+                className="w-full bg-[#0a0a0a] border border-[#76b900]/30 text-zinc-300 px-4 py-2.5 rounded-sm focus:outline-none focus:border-[#76b900] transition-colors appearance-none cursor-pointer"
               >
-                <option value="">Select a molecule...</option>
+                <option value="">Select an example...</option>
                 {examples.map(ex => (
                   <option key={ex.name} value={ex.name}>{ex.name}</option>
                 ))}
@@ -116,56 +213,66 @@ export default function Home() {
             </div>
 
             {/* SMILES Input */}
-            <div>
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-3 block">
-                SMILES String <span className="text-red-500 text-lg">*</span>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                SMILES String <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={smiles}
                 onChange={(e) => setSmiles(e.target.value)}
-                placeholder="Enter SMILES string..."
-                className="w-full h-28 rounded-lg border border-white/10 bg-[#161616] p-4 text-sm font-mono text-[#76b900] placeholder:text-zinc-800 outline-none focus:border-[#76b900]/50 transition-all resize-none"
+                className="w-full h-24 bg-[#0a0a0a] border border-white/10 text-[#76b900] p-4 rounded-sm focus:outline-none focus:border-[#76b900] transition-colors resize-none font-mono text-sm leading-relaxed"
+                placeholder="CC1=C(C=C(C=C1)O)O"
               />
             </div>
 
-            {/* Batch Size */}
-            <div>
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-3 block">
-                Number of Molecules to generate <span className="text-zinc-600 italic">ⓘ</span> <span className="text-red-500 text-lg">*</span>
-              </label>
-              <input
-                type="number"
-                value={numMolecules}
-                onChange={(e) => setNumMolecules(Number(e.target.value))}
-                className="w-full h-11 rounded-lg border border-white/10 bg-[#161616] px-4 text-sm outline-none focus:border-[#76b900]/50 transition-all"
-              />
-            </div>
-
-            {/* Algorithm */}
-            <div>
-              <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-3 block">
-                Sampling Algorithm <span className="text-zinc-600 italic">ⓘ</span>
-              </label>
-              <select
-                value={algorithm}
-                onChange={(e) => setAlgorithm(e.target.value)}
-                className="w-full h-11 rounded-lg border border-white/10 bg-[#161616] px-4 text-sm outline-none focus:border-[#76b900]/50 transition-all"
-              >
-                <option value="CMA-ES">CMA-ES Controlled Generation</option>
-                <option value="StandardDeviation">Sampling Standard Deviation</option>
-              </select>
-            </div>
-
-            {/* Property Toggle */}
-            <div className="flex items-end gap-4">
-              <div className="flex-1">
-                <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-3 block">
-                  Property to Optimize <span className="text-zinc-600 italic">ⓘ</span>
+            {/* Form Grid for 2-column layout to save vertical space */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Number of Molecules */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                  Number of Molecules <span className="opacity-50 italic">ⓘ</span> <span className="text-red-500">*</span>
                 </label>
-                <select
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={numMolecules}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (val > 30) setNumMolecules(30);
+                    else if (val < 1) setNumMolecules(1);
+                    else setNumMolecules(val);
+                  }}
+                  className="w-full bg-[#0a0a0a] border border-white/10 text-zinc-300 px-4 py-2 rounded-sm focus:outline-none focus:border-[#76b900] transition-colors"
+                />
+              </div>
+
+              {/* Sampling Algorithm */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                  Sampling Algorithm <span className="opacity-50 italic">ⓘ</span>
+                </label>
+                <select 
+                  value={algorithm}
+                  onChange={(e) => setAlgorithm(e.target.value)}
+                  className="w-full bg-[#0a0a0a] border border-white/10 text-zinc-300 px-4 py-2 rounded-sm focus:outline-none focus:border-[#76b900] transition-colors appearance-none cursor-pointer"
+                >
+                  <option value="CMA-ES">CMA-ES Controlled Generation</option>
+                  <option value="StandardDeviation">Sampling Standard Deviation</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Property to Optimize & Maximize Toggle */}
+            <div className="flex items-end gap-4">
+              <div className="flex-1 space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                  Property to Optimize <span className="opacity-50 italic">ⓘ</span>
+                </label>
+                <select 
                   value={propertyName}
                   onChange={(e) => setPropertyName(e.target.value)}
-                  className="w-full h-11 rounded-lg border border-[#76b900] bg-black px-4 text-sm outline-none focus:ring-1 focus:ring-[#76b900] transition-all"
+                  className="w-full bg-[#0a0a0a] border border-[#76b900]/50 text-zinc-300 px-4 py-2 rounded-sm focus:outline-none focus:border-[#76b900] transition-colors appearance-none cursor-pointer"
                 >
                   <option value="QED">QED</option>
                   <option value="plogP">plogP</option>
@@ -174,22 +281,22 @@ export default function Home() {
               <div className="flex items-center gap-3 mb-2">
                 <div 
                   onClick={() => setMaximize(!maximize)}
-                  className={`w-14 h-7 rounded-full transition-colors cursor-pointer relative ${maximize ? 'bg-[#76b900]' : 'bg-zinc-800'}`}
+                  className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${maximize ? 'bg-[#76b900]' : 'bg-zinc-800'}`}
                 >
-                  <div className={`absolute top-1 w-5 h-5 rounded-full bg-black transition-all ${maximize ? 'left-8' : 'left-1'}`} />
+                  <div className={`w-4 h-4 bg-black rounded-full transition-transform ${maximize ? 'translate-x-6' : 'translate-x-0'}`} />
                 </div>
-                <span className="text-xs font-bold text-zinc-400">Maximize</span>
+                <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-wider">Maximize</span>
               </div>
             </div>
 
-            {/* Similarity Constraint */}
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest">
-                  Similarity Constraint <span className="text-red-500 text-lg">*</span> <span className="text-zinc-600 italic ml-1 text-sm">ⓘ</span>
+            {/* Similarity Constraint Slider */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                  Similarity Constraint <span className="text-red-500">*</span> <span className="opacity-50 italic">ⓘ</span>
                 </label>
-                <div className="bg-black border border-white/10 rounded px-3 py-1 text-sm font-bold text-white min-w-[50px] text-center">
-                  {minSimilarity}
+                <div className="bg-[#0a0a0a] px-3 py-1 border border-white/20 rounded-sm text-xs font-bold text-zinc-300">
+                  {minSimilarity.toFixed(1)}
                 </div>
               </div>
               <input
@@ -199,43 +306,41 @@ export default function Home() {
                 step="0.1"
                 value={minSimilarity}
                 onChange={(e) => setMinSimilarity(Number(e.target.value))}
-                className="w-full accent-[#76b900] bg-zinc-800 h-1 rounded-lg appearance-none cursor-pointer"
+                className="w-full accent-[#76b900] h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] text-zinc-600 mt-2 font-bold px-1">
-                {Array.from({length: 11}).map((_, i) => (
-                  <span key={i}>{i/10 === 0 ? 0 : i/10 === 1 ? 1 : i/10}</span>
-                ))}
+              <div className="flex justify-between text-[8px] font-bold text-zinc-600 px-1">
+                <span>0</span><span>0.1</span><span>0.2</span><span>0.3</span><span>0.4</span><span>0.5</span><span>0.6</span><span>0.7</span><span>0.8</span><span>0.9</span><span>1</span>
               </div>
             </div>
 
-            {/* Recommended Defaults */}
-            <div className="flex items-center gap-3">
-              <input type="checkbox" className="w-4 h-4 rounded border-white/10 bg-black accent-[#76b900]" />
-              <label className="text-xs font-bold text-zinc-400">Use recommended defaults</label>
+            {/* Use Defaults Toggle */}
+            <div className="flex items-center gap-3 py-2">
+              <input type="checkbox" className="w-4 h-4 accent-[#76b900] border-white/10 rounded" />
+              <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">Use recommended defaults</label>
             </div>
 
-            {/* Advanced Settings */}
-            <div className="grid grid-cols-2 gap-6 pb-12">
-              <div>
-                <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-3 block">
-                  Particles <span className="text-red-500 text-lg">*</span> <span className="text-zinc-600 italic ml-1">ⓘ</span>
+            {/* Final Row: Particles and Iterations */}
+            <div className="grid grid-cols-2 gap-4 pb-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                  Particles <span className="text-red-500">*</span> <span className="opacity-50 italic">ⓘ</span>
                 </label>
                 <input
                   type="number"
                   value={particles}
                   onChange={(e) => setParticles(Number(e.target.value))}
-                  className="w-full h-11 rounded-lg border border-white/10 bg-[#161616] px-4 text-sm outline-none focus:border-[#76b900]/50 transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/10 text-zinc-300 px-4 py-2 rounded-sm focus:outline-none focus:border-[#76b900] transition-colors"
                 />
               </div>
-              <div>
-                <label className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-3 block">
-                  Iterations <span className="text-red-500 text-lg">*</span> <span className="text-zinc-600 italic ml-1">ⓘ</span>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                  Iterations <span className="text-red-500">*</span> <span className="opacity-50 italic">ⓘ</span>
                 </label>
                 <input
                   type="number"
                   value={iterations}
                   onChange={(e) => setIterations(Number(e.target.value))}
-                  className="w-full h-11 rounded-lg border border-white/10 bg-[#161616] px-4 text-sm outline-none focus:border-[#76b900]/50 transition-all"
+                  className="w-full bg-[#0a0a0a] border border-white/10 text-zinc-300 px-4 py-2 rounded-sm focus:outline-none focus:border-[#76b900] transition-colors"
                 />
               </div>
             </div>
@@ -267,7 +372,7 @@ export default function Home() {
         </div>
 
         {/* Right Column: Output Panel */}
-        <div className="flex-[1.2] flex flex-col bg-[#0b0b0b]">
+        <div className="flex-[1.2] flex flex-col bg-[#0b0b0b] overflow-hidden">
           <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-6">
               <h2 className="text-white font-bold text-lg">Output</h2>
@@ -286,7 +391,10 @@ export default function Home() {
                 </span>
               </nav>
             </div>
-            <div className="flex items-center gap-2 text-[#76b900] text-xs font-bold cursor-pointer hover:underline">
+            <div 
+              onClick={downloadResults}
+              className={`flex items-center gap-2 text-[#76b900] text-xs font-bold cursor-pointer hover:underline ${!results ? 'opacity-30 cursor-not-allowed grayscale' : ''}`}
+            >
               <span className="text-lg">↓</span> Download
             </div>
           </header>
@@ -298,16 +406,27 @@ export default function Home() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10">
                     {results.molecules?.map((m, i) => (
                       <div key={i} className="flex flex-col">
-                        <div className="aspect-[4/3] w-full bg-transparent flex items-center justify-center relative group">
-                          {/* Molecule Sketch Placeholder - White lines on dark */}
-                          <div className="w-full h-full flex items-center justify-center p-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                            <svg viewBox="0 0 100 100" className="w-full h-full stroke-white fill-none stroke-[0.5]">
-                              <path d="M30,50 L50,30 L70,50 L50,70 Z M50,30 L50,10 M70,50 L90,50 M50,70 L50,90 M30,50 L10,50" />
-                              <circle cx="50" cy="10" r="2" fill="white" />
-                              <circle cx="90" cy="50" r="2" fill="white" />
-                              <circle cx="50" cy="90" r="2" fill="white" />
-                              <circle cx="10" cy="50" r="2" fill="white" />
+                        <div className="aspect-[4/3] w-full bg-transparent flex items-center justify-center relative group overflow-hidden">
+                          {/* Real Molecule Visualization */}
+                          <div className="w-full h-full flex items-center justify-center p-2 transition-transform duration-500 group-hover:scale-110">
+                            <img 
+                              src={getMoleculeSvg(m.smiles)} 
+                              alt={m.smiles}
+                              className="w-full h-full object-contain invert brightness-200 contrast-125 opacity-90 group-hover:opacity-100"
+                              onError={(e) => {
+                                // Fallback to a generic but unique geometric pattern if image fails
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                            {/* Fallback pattern that varies based on SMILES string length/content */}
+                            <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full stroke-white/20 fill-none stroke-[0.5] -z-10">
+                               <path d={`M${30 + (m.smiles.length % 10)},50 L50,${30 + (i % 5)} L${70 - (i % 10)},50 L50,70 Z`} />
                             </svg>
+                          </div>
+                          
+                          {/* Hover Tooltip for SMILES */}
+                          <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4 text-[10px] text-zinc-400 font-mono break-all text-center leading-tight">
+                            {m.smiles}
                           </div>
                         </div>
                         {typeof m.score === "number" && (

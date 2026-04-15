@@ -32,6 +32,22 @@ export async function POST(req: Request) {
   }
 
   // Ensure data has the expected structure for the frontend
+  if (data && data.raw && typeof data.raw.molecules === 'string') {
+    try {
+      const rawMols = JSON.parse(data.raw.molecules);
+      if (Array.isArray(rawMols)) {
+        data.molecules = rawMols.map((m: any) => ({
+          smiles: m.sample || m.smiles || m.smi,
+          score: m.score
+        }));
+        data.generated = data.molecules.length;
+        data.drug_like = data.molecules.length;
+      }
+    } catch (e) {
+      console.error("Failed to parse raw.molecules string:", e);
+    }
+  }
+
   if (data && !data.molecules && Array.isArray(data)) {
     // If backend returned a raw array instead of the {molecules: []} object
     data = {
